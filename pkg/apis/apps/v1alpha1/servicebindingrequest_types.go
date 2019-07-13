@@ -23,13 +23,13 @@ type ServiceBindingRequestSpec struct {
 	//
 	// Example 1:
 	//	backingServiceSelector:
-	//		resourceType: database.example.org
-	//      resourceRef: mysql-database
+	//		resourceKind: database.example.org
+	//      	resourceRef: mysql-database
 	// Example 2:
 	//	backingServiceSelector:
-	//		resourceType: database.example.org
+	//		resourceKind: database.example.org
 	//		resourceVersion: v1alpha1
-	//      resourceRef: mysql-database
+	//      	resourceRef: mysql-database
 	BackingServiceSelector BackingServiceSelector `json:"backingServiceSelector"`
 
 	// ApplicationSelector is used to identify the application connecting to the
@@ -41,9 +41,11 @@ type ServiceBindingRequestSpec struct {
 	//			environment: stage
 	//		resourceKind: Deployment
 	// Example 2:
+	// (By default resourceKind is Deployment)
 	//	applicationSelector:
-	//		resourceKind: Deployment
-	//		resourceType: my-app
+	//		matchLabels:
+	//			connects-to: postgres
+	//			environment: stage
 	ApplicationSelector ApplicationSelector `json:"applicationSelector"`
 }
 
