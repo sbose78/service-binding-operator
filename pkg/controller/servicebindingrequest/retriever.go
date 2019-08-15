@@ -5,12 +5,15 @@ import (
 	"fmt"
 	"strings"
 
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"github.com/go-logr/logr"
 	"github.com/redhat-developer/service-binding-operator/pkg/controller/servicebindingrequest/planner"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 )
@@ -19,6 +22,7 @@ import (
 type Retriever struct {
 	ctx           context.Context   // request context
 	client        client.Client     // Kubernetes API client
+	dynClient     dynamic.Interface // kubernetes dynamic api client
 	plan          *planner.Plan     // plan instance
 	logger        logr.Logger       // logger instance
 	data          map[string][]byte // data retrieved
@@ -157,7 +161,20 @@ func (r *Retriever) readConfigMap(name string, items []string) error {
 	logger := r.logger.WithValues("ConfigMap.Name", name, "ConfigMap.Items", items)
 	logger.Info("Reading ConfigMap items...")
 	configMapObj := corev1.ConfigMap{}
-	err := r.client.Get(r.ctx, types.NamespacedName{Namespace: r.plan.Ns, Name: name}, &configMapObj)
+
+	secretResource := schema.GroupVersionResource{corev1.GroupName, corev1.SchemeGroupVersion.Version, "Secret"}
+	secretClient := r.dynClient.Resource(secretResource).Namespace(r.plan.Ns)
+	secretWatcher, err := secretClient.Watch(metav1.ListOptions{Watch: true, FieldSelector: fmt.Sprintf("metadata.name=%s", name)})
+	ch := secretWatcher.ResultChan()
+	for event := range ch {
+		_, ok := event.Object.(*corev1.Secret)
+		if !ok {
+			logger.Error("couldn't figure out what triggered this event")
+		}
+		&handler.
+	}
+
+	err = r.client.Get(r.ctx, types.NamespacedName{Namespace: r.plan.Ns, Name: name}, &configMapObj)
 	if err != nil {
 		return err
 	}
@@ -227,6 +244,19 @@ func (r *Retriever) Retrieve() error {
 	}
 
 	return r.saveDataOnSecret()
+}
+
+// NewRetrieverWithDynamicClient instantiate a new retriever instance.
+func NewRetrieverWithDynamicClient(ctx context.Context, client dynamic.Interface, plan *planner.Plan, bindingPrefix string) *Retriever {
+	return &Retriever{
+		ctx:           ctx,
+		dynClient:     client,
+		logger:        logf.Log.WithName("retriever"),
+		plan:          plan,
+		data:          make(map[string][]byte),
+		volumeKeys:    []string{},
+		bindingPrefix: bindingPrefix,
+	}
 }
 
 // NewRetriever instantiate a new retriever instance.

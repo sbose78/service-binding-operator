@@ -139,7 +139,8 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 		return RequeueOnNotFound(err)
 	}
 
-	retriever := NewRetriever(ctx, r.client, plan, instance.Spec.EnvVarPrefix)
+	//retriever := NewRetriever(ctx, r.client, plan, instance.Spec.EnvVarPrefix)
+	retriever := NewRetrieverWithDynamicClient(ctx, r.dynClient, plan, instance.Spec.EnvVarPrefix)
 	if err = retriever.Retrieve(); err != nil {
 		// Update Status
 		r.setBindingInProgressStatus(instance)

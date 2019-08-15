@@ -3,8 +3,9 @@ package planner
 import (
 	"context"
 	"fmt"
-	"github.com/redhat-developer/service-binding-operator/pkg/resourcepoll"
 	"strings"
+
+	"github.com/redhat-developer/service-binding-operator/pkg/resourcepoll"
 
 	"github.com/go-logr/logr"
 	olmv1alpha1 "github.com/operator-framework/operator-lifecycle-manager/pkg/api/apis/operators/v1alpha1"
