@@ -100,6 +100,7 @@ func (r *Reconciler) appendVolumes(volumeList []corev1.Volume, data map[string][
 // 	  to load intermediary secret;
 func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, error) {
 	ctx := context.TODO()
+
 	logger := logf.Log.WithValues("Request.Namespace", request.Namespace, "Request.Name", request.Name)
 	logger.Info("Reconciling ServiceBindingRequest")
 

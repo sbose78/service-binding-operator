@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"github.com/go-logr/logr"
 	"github.com/redhat-developer/service-binding-operator/pkg/controller/servicebindingrequest/planner"
 	corev1 "k8s.io/api/core/v1"
@@ -169,9 +168,9 @@ func (r *Retriever) readConfigMap(name string, items []string) error {
 	for event := range ch {
 		_, ok := event.Object.(*corev1.Secret)
 		if !ok {
-			logger.Error("couldn't figure out what triggered this event")
+			logger.Error("could not figure out what triggered this event")
 		}
-		&handler.
+
 	}
 
 	err = r.client.Get(r.ctx, types.NamespacedName{Namespace: r.plan.Ns, Name: name}, &configMapObj)
