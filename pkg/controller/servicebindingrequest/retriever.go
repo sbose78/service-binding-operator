@@ -107,10 +107,11 @@ func (r *Retriever) read(place, path string, xDescriptors []string) error {
 
 	for name, items := range secrets {
 		// loading secret items all-at-once
-		err := r.readSecret(name, items)
+		err := r.watchSecret(name, items)
 		if err != nil {
 			return err
 		}
+
 	}
 	for name, items := range configMaps {
 		// add the function readConfigMap
@@ -118,6 +119,34 @@ func (r *Retriever) read(place, path string, xDescriptors []string) error {
 		if err != nil {
 			return err
 		}
+
+	}
+	return nil
+}
+
+func (r *Retriever) watchSecret(secretName string, items []string) error {
+	secretResource := schema.GroupVersionResource{corev1.GroupName, corev1.SchemeGroupVersion.Version, "Secret"}
+	secretClient := r.dynClient.Resource(secretResource).Namespace(r.plan.Ns)
+	secretWatcher, err := secretClient.Watch(metav1.ListOptions{Watch: true, FieldSelector: fmt.Sprintf("metadata.name=%s", secretName)})
+	if err != nil {
+		return err
+	}
+	ch := secretWatcher.ResultChan()
+
+	for event := range ch {
+		secretObj, ok := event.Object.(*corev1.Secret)
+		if !ok {
+			// ignore the event
+			continue
+		}
+
+		// inspecting secret data
+		for key, value := range secretObj.Data {
+			r.store(fmt.Sprintf("secret_%s", key), value)
+		}
+
+		// ensure this write is idempotent.
+		r.saveDataOnSecret()
 	}
 	return nil
 }
@@ -161,19 +190,7 @@ func (r *Retriever) readConfigMap(name string, items []string) error {
 	logger.Info("Reading ConfigMap items...")
 	configMapObj := corev1.ConfigMap{}
 
-	secretResource := schema.GroupVersionResource{corev1.GroupName, corev1.SchemeGroupVersion.Version, "Secret"}
-	secretClient := r.dynClient.Resource(secretResource).Namespace(r.plan.Ns)
-	secretWatcher, err := secretClient.Watch(metav1.ListOptions{Watch: true, FieldSelector: fmt.Sprintf("metadata.name=%s", name)})
-	ch := secretWatcher.ResultChan()
-	for event := range ch {
-		_, ok := event.Object.(*corev1.Secret)
-		if !ok {
-			logger.Error("could not figure out what triggered this event")
-		}
-
-	}
-
-	err = r.client.Get(r.ctx, types.NamespacedName{Namespace: r.plan.Ns, Name: name}, &configMapObj)
+	err := r.client.Get(r.ctx, types.NamespacedName{Namespace: r.plan.Ns, Name: name}, &configMapObj)
 	if err != nil {
 		return err
 	}
@@ -204,6 +221,7 @@ func (r *Retriever) store(key string, value []byte) {
 
 // saveDataOnSecret create or update secret that will store the data collected.
 func (r *Retriever) saveDataOnSecret() error {
+	// FIXME: Set ownerReferences
 	secretObj := &corev1.Secret{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "Secret",
