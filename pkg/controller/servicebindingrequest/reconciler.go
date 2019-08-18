@@ -11,6 +11,7 @@ import (
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
@@ -21,8 +22,9 @@ import (
 
 // Reconciler reconciles a ServiceBindingRequest object
 type Reconciler struct {
-	client client.Client   // kubernetes api client
-	scheme *runtime.Scheme // api scheme
+	client    client.Client     // kubernetes api client
+	scheme    *runtime.Scheme   // api scheme
+	dynClient dynamic.Interface // kubernetes dynamic api client
 }
 
 // appendEnvFrom based on secret name and list of EnvFromSource instances, making sure secret is

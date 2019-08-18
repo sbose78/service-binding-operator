@@ -8,6 +8,7 @@ import (
 	"github.com/redhat-developer/service-binding-operator/pkg/controller/servicebindingrequest/planner"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/event"
@@ -27,7 +28,8 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) *Reconciler {
-	return &Reconciler{client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	dynClient,_ := dynamic.NewForConfig(mgr.GetConfig())
+	return &Reconciler{client: mgr.GetClient(), scheme: mgr.GetScheme(), dynClient: )}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
