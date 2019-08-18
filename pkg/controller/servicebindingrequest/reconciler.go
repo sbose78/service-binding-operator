@@ -2,6 +2,7 @@ package servicebindingrequest
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
 	"github.com/redhat-developer/service-binding-operator/pkg/resourcepoll"
@@ -9,8 +10,10 @@ import (
 	osappsv1 "github.com/openshift/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	extv1beta1 "k8s.io/api/extensions/v1beta1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -19,6 +22,8 @@ import (
 	"github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 	"github.com/redhat-developer/service-binding-operator/pkg/controller/servicebindingrequest/planner"
 )
+
+var existingCRWatches []string
 
 // Reconciler reconciles a ServiceBindingRequest object
 type Reconciler struct {
@@ -137,6 +142,45 @@ func (r *Reconciler) Reconcile(request reconcile.Request) (reconcile.Result, err
 			return reconcile.Result{}, err
 		}
 		return RequeueOnNotFound(err)
+	}
+	crResource := schema.GroupVersionResource{plan.CR.GroupVersionKind().Group,
+		plan.CR.GroupVersionKind().Version,
+		"databases",
+		// URGENT: How do we get this plural resource?
+		// Our API doesn't have this info
+	}
+	crClient := r.dynClient.Resource(crResource).Namespace(plan.Ns)
+
+	alreadyWatched := false
+
+	for _, w := range existingCRWatches {
+		if fmt.Sprintf("%s/%s", crResource.String(), plan.CR.GetName()) == w {
+			alreadyWatched = true
+		}
+	}
+
+	if !alreadyWatched {
+		crWatcher, err := crClient.Watch(metav1.ListOptions{Watch: true, FieldSelector: fmt.Sprintf("metadata.name=%s", plan.CR.GetName())})
+		existingCRWatches = append(existingCRWatches, fmt.Sprintf("%s/%s", crResource.String(), plan.CR.GetName()))
+
+		if err == nil {
+
+			//return reconcile.Result{}, err
+			events := crWatcher.ResultChan()
+			fmt.Println("channel created")
+
+			go func() {
+				for {
+					select {
+					case _ = <-events:
+						fmt.Println("some CR changed, find out type and requeue?")
+						// Should we call binder? but how do we
+					}
+				}
+			}()
+		} else {
+			// Log error and move on with life ?
+		}
 	}
 
 	retriever := NewRetriever(ctx, r.client, plan, instance.Spec.EnvVarPrefix)

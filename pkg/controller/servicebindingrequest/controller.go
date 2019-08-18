@@ -28,8 +28,8 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) *Reconciler {
-	dynClient,_ := dynamic.NewForConfig(mgr.GetConfig())
-	return &Reconciler{client: mgr.GetClient(), scheme: mgr.GetScheme(), dynClient: )}
+	dynClient, _ := dynamic.NewForConfig(mgr.GetConfig())
+	return &Reconciler{client: mgr.GetClient(), scheme: mgr.GetScheme(), dynClient: dynClient}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
