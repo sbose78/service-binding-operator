@@ -15,6 +15,7 @@ type ServiceBindingRequestSpec struct {
 	// 	https://book.kubebuilder.io/beyond_basics/generating_crd.html
 
 	// MountPathPrefix is the prefix for volume mount
+	// +optional
 	MountPathPrefix string `json:"mountPathPrefix,omitempty"`
 
 	// EnvVarPrefix is the prefix for environment variables
@@ -27,6 +28,9 @@ type ServiceBindingRequestSpec struct {
 
 	// BackingServiceSelector is used to identify the backing service operator.
 	BackingServiceSelector BackingServiceSelector `json:"backingServiceSelector"`
+
+	// BackingServiceSelectors is used to identify multiple backing services.
+	BackingServiceSelectors []BackingServiceSelector `json:"backingServiceSelectors"`
 
 	// ApplicationSelector is used to identify the application connecting to the
 	// backing service operator.
@@ -52,20 +56,17 @@ type ServiceBindingRequestStatus struct {
 // BackingServiceSelector defines the selector based on resource name, version, and resource kind
 // +k8s:openapi-gen=true
 type BackingServiceSelector struct {
-	Group       string `json:"group"`
-	Version     string `json:"version"`
-	Kind        string `json:"kind"`
-	ResourceRef string `json:"resourceRef"`
+	metav1.GroupVersionKind `json:",inline"`
+	ResourceRef             string `json:"resourceRef"`
 }
 
 // ApplicationSelector defines the selector based on labels and GVR
 // +k8s:openapi-gen=true
 type ApplicationSelector struct {
-	MatchLabels map[string]string `json:"matchLabels,omitempty"`
-	Group       string            `json:"group,omitempty"`
-	Version     string            `json:"version"`
-	Resource    string            `json:"resource"`
-	ResourceRef string            `json:"resourceRef"`
+	// +optional
+	LabelSelector               *metav1.LabelSelector `json:"labelSelector,omitempty"`
+	metav1.GroupVersionResource `json:",inline"`
+	ResourceRef                 string `json:"resourceRef,omitempty"`
 }
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object

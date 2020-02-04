@@ -27,14 +27,8 @@ type Reconciler struct {
 }
 
 const (
-	// bindingInProgress binding is in progress
-	bindingInProgress = "InProgress"
 	// BindingSuccess binding has succeeded
 	BindingSuccess = "Success"
-	// bindingFail binding has failed
-	bindingFail = "Fail"
-	// time in seconds to wait before requeuing requests
-	requeueAfter int64 = 45
 	// sbrFinalizer annotation used in finalizer steps
 	sbrFinalizer = "finalizer.servicebindingrequest.openshift.io"
 )
@@ -71,8 +65,8 @@ func (r *Reconciler) setApplicationObjects(
 func (r *Reconciler) getServiceBindingRequest(
 	namespacedName types.NamespacedName,
 ) (*v1alpha1.ServiceBindingRequest, error) {
-	gr := v1alpha1.SchemeGroupVersion.WithResource(ServiceBindingRequestResource)
-	resourceClient := r.dynClient.Resource(gr).Namespace(namespacedName.Namespace)
+	gvr := v1alpha1.SchemeGroupVersion.WithResource(ServiceBindingRequestResource)
+	resourceClient := r.dynClient.Resource(gvr).Namespace(namespacedName.Namespace)
 	u, err := resourceClient.Get(namespacedName.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, err
@@ -104,8 +98,8 @@ func (r *Reconciler) updateStatusServiceBindingRequest(
 		return nil, err
 	}
 
-	gr := v1alpha1.SchemeGroupVersion.WithResource(ServiceBindingRequestResource)
-	resourceClient := r.dynClient.Resource(gr).Namespace(sbr.GetNamespace())
+	gvr := v1alpha1.SchemeGroupVersion.WithResource(ServiceBindingRequestResource)
+	resourceClient := r.dynClient.Resource(gvr).Namespace(sbr.GetNamespace())
 	u, err = resourceClient.UpdateStatus(u, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
@@ -127,8 +121,8 @@ func (r *Reconciler) updateServiceBindingRequest(
 	if err != nil {
 		return nil, err
 	}
-	gr := v1alpha1.SchemeGroupVersion.WithResource(ServiceBindingRequestResource)
-	resourceClient := r.dynClient.Resource(gr).Namespace(sbr.GetNamespace())
+	gvr := v1alpha1.SchemeGroupVersion.WithResource(ServiceBindingRequestResource)
+	resourceClient := r.dynClient.Resource(gvr).Namespace(sbr.GetNamespace())
 	u, err = resourceClient.Update(u, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, err
@@ -169,9 +163,9 @@ func checkSBR(sbr *v1alpha1.ServiceBindingRequest, log *log.Log) error {
 		log.Debug("Spec.ApplicationSelector.ResourceRef not found")
 
 		// Check if MatchLabels is present
-		if sbr.Spec.ApplicationSelector.MatchLabels == nil {
+		if sbr.Spec.ApplicationSelector.LabelSelector == nil {
 			err := errors.New("NotFoundError")
-			log.Error(err, "Spec.ApplicationSelector.MatchLabels not found")
+			log.Error(err, "Spec.ApplicationSelector.LabelSelector not found")
 			return err
 		}
 	}
@@ -197,7 +191,7 @@ func (r *Reconciler) unbind(
 	}
 
 	logger.Debug("Reading intermediary secret before deletion.")
-	secretObj, err := secret.Get()
+	secretObj, _, err := secret.Get()
 	if err != nil {
 		logger.Error(err, "On reading intermediary secret.")
 		return RequeueError(err)
@@ -284,9 +278,11 @@ func (r *Reconciler) bind(
 	}
 
 	// appending finalizer, should be later removed upon resource deletion
-	sbr.SetFinalizers(append(sbr.GetFinalizers(), sbrFinalizer))
-	if _, err = r.updateServiceBindingRequest(sbr); err != nil {
-		return NoRequeue(err)
+	if !containsStringSlice(sbr.GetFinalizers(), sbrFinalizer) {
+		sbr.SetFinalizers(append(sbr.GetFinalizers(), sbrFinalizer))
+		if _, err = r.updateServiceBindingRequest(sbr); err != nil {
+			return NoRequeue(err)
+		}
 	}
 
 	logger.Info("All done!")

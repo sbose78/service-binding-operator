@@ -21,6 +21,8 @@ import (
 
 	"github.com/redhat-developer/service-binding-operator/pkg/apis/apps/v1alpha1"
 	"github.com/redhat-developer/service-binding-operator/pkg/converter"
+
+	knativev1 "knative.dev/serving/pkg/apis/serving/v1"
 )
 
 // resource details employed in mocks
@@ -230,7 +232,20 @@ func clusterServiceVersionMock(
 	strategy := olminstall.StrategyDetailsDeployment{
 		DeploymentSpecs: []olminstall.StrategyDeploymentSpec{{
 			Name: "deployment",
-			Spec: appsv1.DeploymentSpec{},
+			Spec: appsv1.DeploymentSpec{
+				Selector: &metav1.LabelSelector{
+					MatchLabels: map[string]string{
+						name: "service-binding-operator",
+					},
+				},
+				Template: corev1.PodTemplateSpec{
+					Spec: corev1.PodSpec{
+						Containers: []corev1.Container{{
+							Command: []string{"service-binding-operator"},
+						}},
+					},
+				},
+			},
 		}},
 	}
 
@@ -395,20 +410,16 @@ func ServiceBindingRequestMock(
 				},
 			},
 			ApplicationSelector: v1alpha1.ApplicationSelector{
-				Group:       applicationGVR.Group,
-				Version:     applicationGVR.Version,
-				Resource:    applicationGVR.Resource,
-				ResourceRef: applicationResourceRef,
-				MatchLabels: matchLabels,
+				GroupVersionResource: metav1.GroupVersionResource{Group: applicationGVR.Group, Version: applicationGVR.Version, Resource: applicationGVR.Resource},
+				ResourceRef:          applicationResourceRef,
+				LabelSelector:        &metav1.LabelSelector{MatchLabels: matchLabels},
 			},
 			DetectBindingResources: false,
+			BackingServiceSelector: v1alpha1.BackingServiceSelector{
+				GroupVersionKind: metav1.GroupVersionKind{Group: CRDName, Version: CRDVersion, Kind: CRDKind},
+				ResourceRef:      backingServiceResourceRef,
+			},
 		},
-	}
-	sbr.Spec.BackingServiceSelector = v1alpha1.BackingServiceSelector{
-		Group:       CRDName,
-		Version:     CRDVersion,
-		Kind:        CRDKind,
-		ResourceRef: backingServiceResourceRef,
 	}
 	return sbr
 }
@@ -529,6 +540,58 @@ func DeploymentMock(ns, name string, matchLabels map[string]string) appsv1.Deplo
 						Image:   "busybox:latest",
 						Command: []string{"sleep", "3600"},
 					}},
+				},
+			},
+		},
+	}
+}
+
+// KnativeServiceListMock returns a list of KnativeServiceMock.
+func KnativeServiceListMock(ns, name string, matchLabels map[string]string) knativev1.ServiceList {
+	return knativev1.ServiceList{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "ServiceList",
+			APIVersion: "serving.knative.dev/v1",
+		},
+		Items: []knativev1.Service{KnativeServiceMock(ns, name, matchLabels)},
+	}
+}
+
+// UnstructuredKnativeServiceMock converts the KnativeServiceMock to unstructured.
+func UnstructuredKnativeServiceMock(
+	ns,
+	name string,
+	matchLabels map[string]string,
+) (*ustrv1.Unstructured, error) {
+	d := KnativeServiceMock(ns, name, matchLabels)
+	data, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&d)
+	return &ustrv1.Unstructured{Object: data}, err
+}
+
+// KnativeServiceMock creates a mocked knative serivce object of busybox.
+func KnativeServiceMock(ns, name string, matchLabels map[string]string) knativev1.Service {
+	return knativev1.Service{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "Service",
+			APIVersion: "serving.knative.dev/v1",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Namespace: ns,
+			Name:      name,
+			Labels:    matchLabels,
+		},
+		Spec: knativev1.ServiceSpec{
+			ConfigurationSpec: knativev1.ConfigurationSpec{
+				Template: knativev1.RevisionTemplateSpec{
+					Spec: knativev1.RevisionSpec{
+						PodSpec: corev1.PodSpec{
+							Containers: []corev1.Container{{
+								Name:    "busybox",
+								Image:   "busybox:latest",
+								Command: []string{"sleep", "3600"},
+							}},
+						},
+					},
 				},
 			},
 		},
