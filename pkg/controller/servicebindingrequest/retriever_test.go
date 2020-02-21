@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	logf "sigs.k8s.io/controller-runtime/pkg/runtime/log"
 
 	"github.com/redhat-developer/service-binding-operator/test/mocks"
@@ -14,7 +15,7 @@ func TestRetriever(t *testing.T) {
 	var retriever *Retriever
 
 	ns := "testing"
-	backingServiceNs := "backing-servicec-ns"
+	backingServiceNs := "backing-services-ns"
 	crName := "db-testing"
 
 	f := mocks.NewFake(t, ns)
@@ -25,6 +26,7 @@ func TestRetriever(t *testing.T) {
 	cr, err := mocks.UnstructuredDatabaseCRMock(backingServiceNs, crName)
 	require.NoError(t, err)
 
+	f.AddMockedSecret("db-credentials")
 	crInSameNamespace, err := mocks.UnstructuredDatabaseCRMock(ns, crName)
 	require.NoError(t, err)
 
@@ -47,6 +49,14 @@ func TestRetriever(t *testing.T) {
 
 	retriever = NewRetriever(fakeDynClient, plan, "SERVICE_BINDING")
 	require.NotNil(t, retriever)
+
+	t.Run("retrieve", func(t *testing.T) {
+		_ = retriever.ReadCRDDescriptionData(cr, &crdDescription)
+		objs, err := retriever.Retrieve()
+		require.NoError(t, err)
+		require.NotEmpty(t, retriever.data)
+		require.True(t, len(objs) > 0)
+	})
 
 	t.Run("getCRKey", func(t *testing.T) {
 		imageName, _, err := retriever.getCRKey(cr, "spec", "imageName")
@@ -254,4 +264,31 @@ func TestCustomEnvParser(t *testing.T) {
 
 	retriever = NewRetriever(fakeDynClient, plan, "SERVICE_BINDING")
 	require.NotNil(t, retriever)
+
+	t.Run("Should detect custom env values", func(t *testing.T) {
+		_ = retriever.ReadCRDDescriptionData(cr, &crdDescription)
+		_, err = retriever.Retrieve()
+		require.NoError(t, err)
+
+		t.Logf("\nCache %+v", retriever.cache)
+
+		envMap := []corev1.EnvVar{
+			{
+				Name:  "JDBC_CONNECTION_STRING",
+				Value: `{{ .spec.imageName }}@{{ .status.dbCredentials.password }}`,
+			},
+			{
+				Name:  "ANOTHER_STRING",
+				Value: `{{ .status.dbCredentials.user }}_{{ .status.dbCredentials.password }}`,
+			},
+		}
+
+		c := NewCustomEnvParser(envMap, retriever.cache)
+		values, err := c.Parse()
+		if err != nil {
+			t.Error(err)
+		}
+		require.Equal(t, "user_password", values["ANOTHER_STRING"], "Custom env values are not matching")
+		require.Equal(t, "postgres@password", values["JDBC_CONNECTION_STRING"], "Custom env values are not matching")
+	})
 }
