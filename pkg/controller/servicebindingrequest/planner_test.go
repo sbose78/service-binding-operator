@@ -66,9 +66,6 @@ func TestPlannerNewWithMultipleNamespaces(t *testing.T) {
 	}
 	f := mocks.NewFake(t, ns)
 	sbr := f.AddMockedServiceBindingRequestWithMultiNamespaces(name, resourceRef, backingServiceNs, "", deploymentsGVR, matchLabels)
-	sbr.Spec.BackingServiceSelectors = []v1alpha1.BackingServiceSelector{
-		sbr.Spec.BackingServiceSelector,
-	}
 	f.AddMockedUnstructuredCSV("cluster-service-version")
 	f.AddCrossNamespaceMockedDatabaseCR(resourceRef, backingServiceNs)
 	f.AddMockedUnstructuredDatabaseCRD()
