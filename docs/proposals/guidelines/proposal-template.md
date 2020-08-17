@@ -47,7 +47,7 @@ process.
 - [ ] Enhancement is `implementable`
 - [ ] Design details are appropriately documented from clear requirements
 - [ ] Test plan is defined
-- [ ] Graduation criteria for dev preview, tech preview, GA
+- [ ] Graduation criteria for alpha, beta, GA maturity
 - [ ] User-facing documentation is created in [docs](/docs/)
 
 ## Open Questions [optional]
@@ -55,7 +55,7 @@ process.
 This is where to call out areas of the design that require closure before deciding to implement the
 design. For instance:
 
-> 1. This locks a build strategy to run privileged pods. Should we do this?
+> 1. This prevents us from doing cross-namespace binding. Should we do this?
 
 ## Summary
 
