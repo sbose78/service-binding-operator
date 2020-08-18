@@ -1,17 +1,17 @@
 # Enhancement Proposals
 
-An Enhancement Proposal is a way to propose, communicate, and coordinate on new efforts for the `Service Binding` project.
+An Enhancement Proposal is a way to propose, communicate, and coordinate new efforts for the `Service Binding` project.
 
 It is inspired from our experience with the
 [Kubernetes](https://github.com/kubernetes/enhancements/blob/master/keps/README.md) and
 [OKD](https://github.com/openshift/enhancements/blob/master/guidelines/README.md) enhancement
 processes.
 
-## Quick start
+## Process
 
-1. Socialize an idea with others by talking about it with the [community](https://github.com/redhat-developer/service-binding-operator#community-discussion-contribution-and-support). Make sure others think the work is worth doing, and are willing to review design and code changes required.
-2. Draft a proposal by copying the [proposal template](/docs/proposals/guidelines/proposal-template.md).
-3. Submit a pull request with your proposal.
+1. Draft a proposal under `docs/proposal`. Refer the [proposal template](/docs/proposals/guidelines/proposal-template.md).
+2. Discuss the proposal with other contributors in the [community meeting](https://github.com/redhat-developer/service-binding-operator#community-discussion-contribution-and-support). 
+3. If the proposal is approved, submit a Pull Request.
 
 ## FAQs
 
