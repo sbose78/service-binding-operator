@@ -1,16 +1,18 @@
 
 # Roadmap
 
+## Aim of the project
+
 The Service Binding Operator project aims to:
 
-* Enable app developers connect their workloads to backing services with little or no code changes.
+* Enable application developers connect their workloads to backing services **with little or no code changes**.
 
-* Enable backing service authors to expose binding information by decorating the representative Kubernetes objects with little or no code changes.
+* Enable backing service authors to expose binding information by adding metadata to the the representative Kubernetes objects **with little or no code changes**.
 
-The Service Binding Operator is being designed to be adopted by application developers and backing service providers with a *low barrier for entry*.
+The Service Binding Operator is being designed to be adopted by application developers and backing service providers with a **low barrier for entry**.
 
 
-# Areas of work
+# Key feature areas
 
 ### Collection of binding information
 * Annotation "Decorators" in backing service resources.
@@ -28,7 +30,7 @@ The Service Binding Operator is being designed to be adopted by application deve
 * Avoiding escalation of privilege.
 * Narrow down the service account privileges.
 
-### Housekeeping and delivery
+### Release & Packaging
 * Packaging of the Service Binding Controller/CRD.
 
 ----
@@ -63,6 +65,9 @@ Validate advanced volume mounting support for projecting sensitive information a
 
 Identify the information that a duck typed resource needs to contain and 
 support binding secret generation based on the same.
+
+( needs more information )
+
 
 ## Detection of binding resources
 
@@ -140,13 +145,11 @@ The Service Binding Operator project enables a multi-level decision resolution r
 
 2. The actor who creates the backing service CR may choose to override the suggestion using annotations in the CR.
 
-3. The app author who creates the `ServiceBinding` may choose to override the suggestion using a specific attribute in the `ServiceBinding` CR.
+3. The application author who creates the `ServiceBinding` may choose to override the suggestion using a specific attribute in the `ServiceBinding` CR.
 
-In a nutshell, the app author may choose to consume the recommendation of the backing service author with respect to projection as files or environment variables, or the app author may choose to override the recommendation based on the needs.
+In a nutshell, the application author may choose to consume the recommendation of the backing service author with respect to projection as files or environment variables, or the application author may choose to override the recommendation based on her requirements.
 
-Example, the backing service author may choose to indicate that certificate information needs to be projected as files whereas the username could be projected as environment variables.
-
-The app author may choose to project everything as 'files' or environment variables.
+Example, the backing service author may choose to indicate that certificate information needs to be projected as files whereas the username could be projected as environment variables. However, the application author may choose to override the recommendations and project everything as 'files'.
 
 
 ## Improvements
@@ -158,15 +161,16 @@ Enable projection of binding information as both environment variables and volum
 
 To ensure users don't use the service binding operator's service account as a way to escalate privileges, the actor creating the  `ServiceBinding` CR should not be able to indirectly read any Kubernetes object which it was otherwise unauthorized to do so.
 
-**Improvements**
+## Improvements
 
 * To accomplish the above, one needs to deploy a "Validating Admission Webhook" that would do Subject Access Reviews ( SARs ) on relevant objects before admitting the `ServiceBinding` object.
 
 * Review and potentially reduce the permissions granted to the controller's service account.
 
-# Packaging the Service Binding Operator
 
-Even though the Service Binding Operator works on vanilla Kubernetes without OLM, upstream releases are primarily delivered as an OpenShift Community OLM operator. 
+# Release & Packaging
+
+Even though the Service Binding Operator is compatible with vanilla Kubernetes without OLM, upstream releases are today delivered as an OpenShift Community OLM operator. 
 
 **Improvements** 
 
@@ -175,3 +179,8 @@ As part of the release process, the Service Binding Controller/CRD needs to be m
 * A public Helm Repository
 * An "install.yaml" generated on every release that could be installed as a `kubectl apply -f ... `
 * A community Kubernetes Operator on [operatorhub.io](https://operatorhub.io)
+
+
+---
+
+The Roadmap document is a live document, PRs to include new features are welcome.
