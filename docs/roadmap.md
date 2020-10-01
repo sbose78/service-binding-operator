@@ -7,7 +7,7 @@ The Service Binding Operator project aims to:
 
 * Enable application developers connect their workloads to backing services **with little or no code changes**.
 
-* Enable backing service authors to expose binding information by adding metadata to the the representative Kubernetes objects **with little or no code changes**.
+* Enable backing service authors to expose binding information by adding metadata to the representative Kubernetes objects **with little or no code changes**.
 
 The Service Binding Operator is being designed to be adopted by application developers and backing service providers with a **low barrier for entry**.
 
@@ -21,7 +21,7 @@ The Service Binding Operator is being designed to be adopted by application deve
 * Service Composition.
 * Detection of binding resources.
 
-### Project of binding informattion
+### Project of binding information
 * Custom binding variable generation.
 * Projection of binding information in workloads.
 * Projection in podSpec and non-PodSpec based workloads.
@@ -126,7 +126,7 @@ Staying true to the promise of enabling developers to make minimum code changes 
 
 Example, the backing service may expose the `host` and `port` individually but the application may need to use the same as a connection string.
 
-The initial implementation involved use of the Go Templates to construct strings to be injected as environment variables.
+The initial implementation involved use of the Go templates and Jsonpath templates to construct strings to be injected as environment variables.
 
 The improved implementation enables users to compose custom key-value pairs with binding information from multiple service resources.
 
